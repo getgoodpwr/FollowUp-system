@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GoodPWR Build Partner Documents</title>
-<link rel="icon" href="logo.png">
-<link rel="apple-touch-icon" href="logo.png">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%23141414'/><circle cx='32' cy='32' r='22' fill='none' stroke='%23f5a400' stroke-width='3' opacity='.45'/><path d='M36 8 18 36h12l-4 20 20-30H34z' fill='%23f5a400'/></svg>">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%23141414'/><circle cx='32' cy='32' r='22' fill='none' stroke='%23f5a400' stroke-width='3' opacity='.45'/><path d='M36 8 18 36h12l-4 20 20-30H34z' fill='%23f5a400'/></svg>">
 <link rel="preconnect" href="https://script.google.com">
 <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -100,7 +100,7 @@
 </head>
 <body>
 <header class="top">
-  <img id="logo" alt="GoodPWR" style="display:none">
+  <img id="logo" alt="GoodPWR" src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%23141414'/><circle cx='32' cy='32' r='22' fill='none' stroke='%23f5a400' stroke-width='3' opacity='.45'/><path d='M36 8 18 36h12l-4 20 20-30H34z' fill='%23f5a400'/></svg>">
   <div class="brand">GoodPWR<span>Build Partner Documents</span></div>
   <div class="sp"></div>
   <button id="logoutBtn" style="display:none">Log out</button>
@@ -113,7 +113,7 @@
 <script>
 /* ===== CONFIG ===== */
 const API_URL  = 'https://script.google.com/macros/s/AKfycbzmVgj1hEmPZVIfoomyi3iqVLOSWRtikhBTz9bGRckjXflbU0a4Ln1xXFXez-8W_pylQA/exec';
-const LOGO_URL = 'logo.png'; // GoodPWR skull logo uploaded to the same GitHub repo (also used as the tab icon)
+const LOGO_URL = ''; // optional: put 'logo.png' here later if you upload the skull logo to the repo (a built-in icon is used until then)
 
 /* ===== Helpers ===== */
 const $ = s => document.querySelector(s);
@@ -143,7 +143,7 @@ const chip = (status, bp) => {
 const readB64 = file => new Promise((ok,no)=>{ const r=new FileReader(); r.onload=()=>ok(String(r.result).split(',')[1]); r.onerror=no; r.readAsDataURL(file); });
 
 if (LOGO_URL){
-  const l=$('#logo'); l.onload=()=>l.style.display='block'; l.onerror=()=>l.style.display='none'; l.src=LOGO_URL;
+  const l=$('#logo'); l.onload=()=>l.style.display='block'; l.onerror=()=>{}; l.src=LOGO_URL;
   document.querySelectorAll('link[rel=icon],link[rel=apple-touch-icon]').forEach(x => x.href = LOGO_URL);
 }
 
