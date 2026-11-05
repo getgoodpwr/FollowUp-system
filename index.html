@@ -754,7 +754,251 @@ async function submitNew(sendNow){
   } catch(e){ toast(e.message, true); btns.forEach(b => b.disabled = false); $('#sendBtn').textContent = 'Send request email'; }
 }
 
-/* ----- BP Pricing (AI reads agreements) ----- */
+/* =========================================================
+   FREE AGREEMENT READER (no AI)
+   Reads the GoodPWR Solar BP Agreement template:
+   page 2 (BP name + effective date), Section A Pricing Options,
+   Section B Payment Terms, deductions, and the Adder List.
+   Any other PDF (addendum, amendment) gets a general $-amount scan.
+   ========================================================= */
+const PDFJS_URLS = [
+  ['https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs', 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs'],
+  ['https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs', 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs']
+];
+let pdfjsReady = null;
+function loadPdfJs(){
+  if (pdfjsReady) return pdfjsReady;
+  pdfjsReady = (async () => {
+    for (const [lib, worker] of PDFJS_URLS){
+      try {
+        const pdfjs = await import(lib);
+        globalThis.pdfjsWorker = await import(worker); // runs the reader on the page itself (no cross-site worker needed)
+        pdfjs.GlobalWorkerOptions.workerSrc = worker;
+        return pdfjs;
+      } catch(e){}
+    }
+    pdfjsReady = null;
+    throw new Error('Could not load the PDF reader. Please check your internet connection and try again.');
+  })();
+  return pdfjsReady;
+}
+
+/* PDF bytes -> pages of text lines with x positions */
+async function pdfLines(bytes){
+  const pdfjs = await loadPdfJs();
+  const doc = await pdfjs.getDocument({ data: bytes, verbosity: 0 }).promise;
+  const pages = [];
+  for (let p = 1; p <= doc.numPages; p++){
+    const tc = await (await doc.getPage(p)).getTextContent();
+    pages.push(groupLines(tc.items.map(i => ({ s: String(i.str || ''), x: i.transform[4], y: i.transform[5] }))));
+  }
+  return pages;
+}
+function groupLines(items){
+  const segs = items.map(i => ({ s: i.s.replace(/[​­]/g, '').replace(/\s+/g, ' '), x: Math.round(i.x), y: Math.round(i.y) })).filter(i => i.s.trim());
+  segs.sort((a, b) => b.y - a.y || a.x - b.x);
+  const lines = [];
+  for (const it of segs){
+    const l = lines.find(l => Math.abs(l.y - it.y) <= 3);
+    if (l) l.segs.push(it); else lines.push({ y: it.y, segs: [it] });
+  }
+  lines.forEach(l => { l.segs.sort((a, b) => a.x - b.x); l.text = l.segs.map(s => s.s.trim()).join(' ').replace(/\s+/g, ' ').trim(); });
+  return lines;
+}
+
+const MONEY_RE = /(\+?)\$\s*([\d,]*\.?\d+)\s*(?:\/\s*(watt|w\b|ft|mod|day))?/i;
+function parseMoney(t){
+  const m = String(t || '').match(MONEY_RE);
+  if (!m) return null;
+  const amount = Number(m[2].replace(/,/g, ''));
+  if (isNaN(amount)) return null;
+  const per = (m[3] || '').toLowerCase();
+  const unit = per === 'watt' || per === 'w' ? '$/W' : per === 'ft' ? '$ per foot' : per === 'mod' ? '$ per panel' : per === 'day' ? '$ per day' : '$ flat';
+  return { amount, unit, plus: !!m[1] };
+}
+const clean = t => String(t || '').replace(/(\w) ?fi ll\b/g, '$1fill').replace(/\s+/g, ' ').replace(/\s+([,.)])/g, '$1').replace(/\(\s+/g, '(').trim();
+
+function parseAgreement(pages){
+  const items = [], meta = { doc_type: 'Other', doc_date: '', bp_legal_name: '', summary: '', found: [] };
+  const add = (category, item, money, conditions, quote, page) => items.push({
+    category, item: clean(item), amount: money && typeof money.amount === 'number' ? money.amount : undefined,
+    unit: money ? money.unit : 'other', conditions: clean(conditions), source_quote: clean(quote).slice(0, 300), page
+  });
+  const findPage = re => pages.findIndex(lines => lines.some(l => re.test(l.text)));
+  const all = pages.map(ls => ls.map(l => l.text).join('\n')).join('\n');
+
+  // ---- Page 2: effective date + BP legal name
+  for (let p = 0; p < Math.min(pages.length, 4); p++){
+    pages[p].forEach((l, i) => {
+      if (/BUILD PARTNER AGREEMENT/i.test(l.text)) meta.doc_type = 'Master Service Agreement';
+      if (!meta.doc_date && /Effective Date/i.test(l.text)){
+        const d = l.text.match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+        if (d){ const y = d[3].length === 2 ? '20' + d[3] : d[3]; meta.doc_date = y + '-' + d[1].padStart(2, '0') + '-' + d[2].padStart(2, '0'); }
+      }
+      if (!meta.bp_legal_name && /between\s+GOODPWR/i.test(l.text)){
+        const n = l.text.replace(/.*?GOODPWR[^)]*\)\s*and\s*/i, '').replace(/\(?\s*["“]?Build Partner.*$/i, '').replace(/_+/g, '').trim();
+        if (n) meta.bp_legal_name = clean(n);
+      }
+    });
+  }
+  if (/\b(AMENDMENT|ADDENDUM)\b/.test(all.slice(0, 600))) meta.doc_type = /AMENDMENT/.test(all.slice(0, 600)) ? 'Amendment' : 'Addendum';
+
+  // ---- Section A: Pricing Options
+  const pA = findPage(/PRICING OPTIONS/i);
+  if (pA > -1){
+    meta.found.push('Section A');
+    const L = pages[pA];
+    L.forEach((l, i) => {
+      if (/bonus will be awarded/i.test(l.text)){
+        const money = parseMoney(l.text.replace(/\$\s*\./, '$0.'));
+        const sentence = clean(l.text + ' ' + (L[i + 1] && !/bonus will be awarded|Option A/i.test(L[i + 1].text) ? L[i + 1].text : ''));
+        const cond = sentence.replace(/^A\s*\$\s*[\d.]+\s*\/\s*watt\s*/i, '').replace(/^bonus will be awarded for\s*/i, '');
+        const name = /inspection/i.test(sentence) ? 'Inspection bonus' : /schedul/i.test(sentence) ? 'Scheduling bonus' : 'Bonus';
+        if (money) money.unit = '$/W';
+        add('Bonus', name, money, cond, sentence, pA + 1);
+      }
+      if (/Option A/i.test(l.text) && /Option B/i.test(l.text)){
+        const bx = (l.segs.find(s => /Option B/i.test(s.s)) || {}).x || 300;
+        const val = side => {
+          const seg = l.segs.find(s => (side === 'A' ? s.x < bx : s.x >= bx) && /^\$?\s*\d*\.\d+$/.test(s.s.trim()));
+          if (seg) return Number(seg.s.replace(/[^\d.]/g, ''));
+          const m = (side === 'A' ? l.text.split(/Option B/i)[0] : l.text.split(/Option B/i)[1] || '').match(/(\d*\.\d+)/);
+          return m ? Number(m[1]) : null;
+        };
+        // what each option includes = the numbered list under it
+        const incl = { A: [], B: [] };
+        for (let j = i + 1; j < L.length && j < i + 8; j++){
+          if (/ALWAYS SUPPLIES/i.test(L[j].text)) break;
+          const a = L[j].segs.filter(s => s.x < bx).map(s => s.s).join(' '), b = L[j].segs.filter(s => s.x >= bx).map(s => s.s).join(' ');
+          if (a.trim()) incl.A.push(clean(a.replace(/^\d+\.\s*/, ''))); if (b.trim()) incl.B.push(clean(b.replace(/^\d+\.\s*/, '')));
+        }
+        ['A', 'B'].forEach(side => {
+          const v = val(side);
+          add('Install rate', 'Install – Option ' + side, v === null ? null : { amount: v, unit: '$/W' },
+            'Includes: ' + (incl[side].join('; ') || 'see Section A') + (v === null ? ' (rate left blank in agreement)' : ''), l.text, pA + 1);
+        });
+      }
+    });
+  }
+
+  // ---- Section B: Payment Terms (chosen by initials, which are images, so both are listed)
+  const pB = findPage(/Payment Terms/i);
+  if (pB > -1 && pages[pB].some(l => /Section B/i.test(l.text))){
+    meta.found.push('Section B');
+    const L = pages[pB];
+    L.forEach((l, i) => {
+      const m = l.text.match(/Net\s*(\d+)/i);
+      if (m && /Initial/i.test(l.text)){
+        const pct = L.slice(i + 1, i + 4).map(x => x.text).join(' ').match(/(\d+)%[\s\S]*?(\d+)%/);
+        add('Payment terms', 'Net ' + m[1], { amount: Number(m[1]), unit: 'days' },
+          (pct ? 'M1 ' + pct[1] + '% at install complete (photos verified & inspection ready), M2 ' + pct[2] + '% at AHJ passed final inspection. ' : '') + 'Chosen by initials — keep the one that is initialed.',
+          l.text + (pct ? ' — ' + pct[0] : ''), pB + 1);
+      }
+    });
+  }
+
+  // ---- Deductions, penalties & service fees (between Section B and the Adder List)
+  const pAdd = findPage(/ADDER LIST/i);
+  const from = pB > -1 ? pB : (pA > -1 ? pA : -1);
+  if (from > -1){
+    for (let p = from; p < (pAdd > -1 ? pAdd : pages.length); p++){
+      const L = pages[p];
+      L.forEach((l, i) => {
+        if (!/\$\s*[\d,]+/.test(l.text) || /bonus will be awarded|Option A|Net\s*\d+/i.test(l.text)) return;
+        // rebuild the sentence around the amount
+        let s = l.text, k = i;
+        while (k > 0 && !/[.:]\s*$/.test(L[k - 1].text) && !/^[●○•\d]/.test(L[k].text.trim()) && i - k < 3){ k--; s = L[k].text + ' ' + s; }
+        let k2 = i; while (k2 + 1 < L.length && !/[.)]\s*$/.test(L[k2].text) && k2 - i < 2){ k2++; s += ' ' + L[k2].text; }
+        s = clean(s.replace(/^.*?Initials:\s*_*\s*/i, '').replace(/^[●○•]\s*/, '').replace(/^\d+\.\s*/, ''));
+        const money = parseMoney(s.match(/per day/i) ? s.replace(/\$\s*([\d,.]+)\s*per day/i, '$$$1/day') : s);
+        let name = 'Other fee', cat = 'Deduction / chargeback';
+        if (/per day/i.test(s)) name = 'Late / missing photos (per day)';
+        else if (/no call|no show|failure to arrive/i.test(s)) name = 'No call, no show';
+        else if (/deviation/i.test(s)) name = 'Deviation from approved plans';
+        else if (/truck roll|service work/i.test(s)) { if (pAdd > -1) return; name = 'Service work / truck roll'; cat = 'Adder / allowance'; }
+        if (items.some(x => x.item === name)) return;
+        add(cat, name, money, s, s, p + 1);
+      });
+    }
+  }
+
+  // ---- Adder List (table: TASK | PRICE | EACH ADDITIONAL)
+  if (pAdd > -1){
+    meta.found.push('Adder List');
+    let b1 = 280, b2 = 390, pending = null, last = null, stop = false, preNote = null;
+    for (let p = pAdd; p < pages.length && !stop; p++){
+      for (const l of pages[p]){
+        if (/^Docusign Envelope/i.test(l.text) || /^\d{1,2}$/.test(l.text)) continue;
+        if (/TASK/.test(l.text) && /PRICE/.test(l.text)){
+          const px = (l.segs.find(s => /PRICE/.test(s.s)) || {}).x, ex = (l.segs.find(s => /EACH/.test(s.s)) || {}).x;
+          if (px) b1 = px - 25; if (ex) b2 = ex - 15; continue;
+        }
+        if (/Travel Adder Example|Additional pricing agreements/i.test(l.text)){ stop = true; break; }
+        if (/ADDER LIST|adders are expected|before moving forward/i.test(l.text)) continue;
+        const task = clean(l.segs.filter(s => s.x < b1).map(s => s.s).join(' '));
+        const price = clean(l.segs.filter(s => s.x >= b1 && s.x < b2).map(s => s.s).join(' '));
+        const extra = clean(l.segs.filter(s => s.x >= b2).map(s => s.s).join(' '));
+        if (!price){
+          if (task && task.startsWith('(') && last && Math.abs(last.y - l.y) <= 14 && last.page === p){ last.row.conditions = clean(last.row.conditions + ' ' + task); continue; }
+          if (task && !task.startsWith('(')){ pending = { text: task, y: l.y, page: p }; continue; }
+          if (extra && !task){ preNote = { text: extra, y: l.y, page: p }; }
+          if (extra && last && last.page === p && Math.abs(last.y - l.y) <= 14 && !(preNote && preNote.y === l.y && last.used)){ last.row.conditions = clean(last.row.conditions + ' ' + extra); last.used = true; preNote = null; continue; }
+          continue;
+        }
+        let name = task, note = '';
+        if (!name || name.startsWith('(')){ note = name; name = pending && pending.page === p && pending.y - l.y <= 16 ? pending.text : (name || 'Adder'); }
+        pending = null;
+        if (/main service panel upgrade/i.test(name)) name = 'MPU (Main Service Panel Upgrade)';
+        const money = parseMoney(price);
+        let cond = note;
+        if (preNote && preNote.page === p && preNote.y - l.y <= 14){ cond = clean(preNote.text + ' ' + cond); } preNote = null;
+        if (/quote/i.test(price)) cond = clean(cond + ' Quote — price agreed per job');
+        if (/base/i.test(price)) cond = clean(cond + ' Base price');
+        if (money && money.plus) cond = clean(cond + ' Added on top of the tier above');
+        const em = parseMoney(extra);
+        if (extra && !em) cond = clean(cond + ' ' + extra);
+        const row = { category: 'Adder / allowance', item: clean(name), amount: money ? money.amount : undefined, unit: money ? money.unit : 'other', conditions: cond, source_quote: clean([name, note, price, extra].filter(Boolean).join(' | ')), page: p + 1 };
+        items.push(row); last = { row, y: l.y, page: p };
+        if (em){
+          const ex2 = extra.replace(MONEY_RE, '').trim();
+          items.push({ category: 'Adder / allowance', item: clean(name) + ' – each additional', amount: em.amount, unit: em.unit, conditions: clean(ex2), source_quote: row.source_quote, page: p + 1 });
+        }
+      }
+    }
+  }
+
+  // ---- Not our template (addendum, amendment, other): general scan of $ amounts
+  if (!meta.found.length){
+    pages.forEach((L, p) => L.forEach((l, i) => {
+      if (!/\$\s*\.?\d/.test(l.text)) return;
+      const s = clean([L[i - 1] && L[i - 1].text, l.text, L[i + 1] && L[i + 1].text].filter(Boolean).join(' '));
+      const money = parseMoney(l.text.replace(/\$\s*\./, '$0.'));
+      const cat = /bonus/i.test(s) ? 'Bonus' : /install/i.test(s) && money && money.unit === '$/W' ? 'Install rate' : /deduct|penalt|chargeback/i.test(s) ? 'Deduction / chargeback' : 'Other';
+      add(cat, clean(l.text.replace(MONEY_RE, '').replace(/[_|]+/g, ' ')).slice(0, 60) || 'Amount', money, '', s, p + 1);
+    }));
+  }
+
+  const n = k => items.filter(x => x.category === k).length;
+  meta.summary = meta.found.length
+    ? 'Read ' + meta.found.join(', ') + ': ' + n('Install rate') + ' install rate(s), ' + n('Bonus') + ' bonus(es), ' + n('Payment terms') + ' payment term(s), ' + n('Deduction / chargeback') + ' deduction(s), ' + n('Adder / allowance') + ' adder(s).'
+    : 'Not the standard BP Agreement layout — listed every $ amount found for review.';
+  return { ...meta, items };
+}
+
+/* Read one agreement in the browser and save the rows */
+async function readAgreement(fileId, folderId){
+  try {
+    const f = await sapi('pricingFileData', { fileId });
+    const bin = atob(f.data), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    const out = parseAgreement(await pdfLines(u));
+    return await sapi('pricingSave', { fileId, folderId, out });
+  } catch(e){
+    sapi('pricingError', { fileId, folderId, error: e.message }).catch(()=>{});
+    throw e;
+  }
+}
+
+/* ----- BP Pricing (reads the BP Agreement template, no AI) ----- */
 const P = { data: readCache('bpf_pricing'), fresh: false, q: '', status: '', currentOnly: false };
 async function loadPricing(){ const d = await sapi('pricingBoot'); P.data = d; store.set('bpf_pricing', JSON.stringify(d)); return d; }
 function setPricing(d){ P.data = d; store.set('bpf_pricing', JSON.stringify(d)); if (S.tab === 'pricing') drawPricing(); }
@@ -764,7 +1008,8 @@ const fmtAmt = (a, u) => {
   const n = Number(a);
   if (u === '%') return n + '%';
   const s = '$' + n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 });
-  return u === '$/W' ? s + '/W' : s;
+  if (u === 'days') return 'Net ' + n;
+  return u === '$/W' ? s + '/W' : u === '$ per day' ? s + '/day' : u === '$ per foot' ? s + '/ft' : u === '$ per panel' ? s + '/panel' : s;
 };
 
 function pricingPane(){
@@ -813,18 +1058,17 @@ function drawPricing(){
   if (!$('#pList')) return;
   const d = P.data;
   $('#pSheet').href = d.sheetUrl || '#';
-  $('#pKeyWarn').innerHTML = d.hasKey ? '' : `<div class="warnbox mb"><b>AI isn't connected yet.</b> Add the Claude API key in Apps Script (Project Settings → Script properties → <code>CLAUDE_API_KEY</code>). You can still add prices manually.</div>`;
   const list = filteredPricing();
   const review = (d.items || []).filter(i => i.status === 'Needs review').length;
   const bps = new Set((d.items || []).map(i => i.folderId)).size;
-  $('#pStats').innerHTML = `${bps} BP${bps === 1 ? '' : 's'} · ${(d.items || []).length} price items · ${(d.docs || []).length} documents read${review ? ` · <b style="color:var(--warn)">${review} need review</b>` : ''}`;
+  $('#pStats').innerHTML = `${bps} BP${bps === 1 ? '' : 's'} · ${(d.items || []).length} price items · ${(d.docs || []).length} documents read${review ? ` · ${review} not double-checked yet (optional)` : ''}`;
   if (!list.length){
-    $('#pList').innerHTML = `<div class="card center">${(d.items || []).length ? 'No matches.' : 'No pricing yet. Click <b>＋ Add agreements</b> to let the AI read your BP agreements.'}</div>`;
+    $('#pList').innerHTML = `<div class="card center">${(d.items || []).length ? 'No matches.' : 'No pricing yet. Click <b>＋ Add agreements</b> to read your BP agreements.'}</div>`;
     return;
   }
   const groups = {};
   list.forEach(i => { (groups[i.folderId] = groups[i.folderId] || { bp: i.bpName, items: [] }).items.push(i); });
-  const order = { 'Install rate': 1, 'Bonus': 2, 'Scheduling': 3, 'Adder / allowance': 4, 'Minimum': 5, 'Override': 6, 'Deduction / chargeback': 7, 'Other': 8 };
+  const order = { 'Install rate': 1, 'Bonus': 2, 'Payment terms': 3, 'Adder / allowance': 4, 'Deduction / chargeback': 5, 'Minimum': 6, 'Override': 7, 'Other': 8 };
   $('#pList').innerHTML = Object.keys(groups).sort((a, b) => groups[a].bp.localeCompare(groups[b].bp)).map(fid => {
     const g = groups[fid];
     g.items.sort((a, b) => (order[a.category] || 9) - (order[b.category] || 9) || String(a.item).localeCompare(b.item) || (b.effectiveDate || '').localeCompare(a.effectiveDate || ''));
@@ -841,7 +1085,7 @@ function drawPricing(){
       <div class="ptw"><table class="ptable"><thead><tr><th>Item</th><th>Amount</th><th>Conditions</th><th>Effective</th><th>Status</th><th></th></tr></thead><tbody>
       ${g.items.map(i => `<tr class="${i.current ? '' : (i.status === 'Verified' ? 'old' : '')}">
         <td><b>${esc(i.item)}</b><div class="muted">${esc(i.category)}</div></td>
-        <td class="amt">${fmtAmt(i.amount, i.unit)}${i.unit !== '$/W' && i.unit !== '%' && i.unit !== '$ flat' ? `<div class="muted">${esc(i.unit)}</div>` : ''}</td>
+        <td class="amt">${fmtAmt(i.amount, i.unit)}${i.unit === 'other' || i.unit === '$ per job' ? `<div class="muted">${esc(i.unit)}</div>` : ''}</td>
         <td>${esc(i.conditions || '—')}${i.quote ? `<div class="quote">“${esc(i.quote)}”${i.sourceUrl ? ` <a href="${esc(i.sourceUrl)}" target="_blank" rel="noopener">source</a>` : ''}</div>` : ''}</td>
         <td style="white-space:nowrap">${esc(i.effectiveDate || '—')}</td>
         <td>${i.status === 'Verified' ? chip('Approved').replace('Approved', 'Verified') : chip('Missing').replace('Missing', 'Needs review')}${i.current ? '<div class="muted" style="margin-top:3px">● current</div>' : (i.status === 'Verified' ? '<div class="muted" style="margin-top:3px">older</div>' : '')}</td>
@@ -910,12 +1154,11 @@ function openPriceEdit(item, folderId){
   }
 }
 
-/* Pick BP folders → find agreements → AI reads them one by one */
+/* Pick BP folders → find agreements → read them one by one */
 function openAddAgreements(){
   if (!S.folders){ toast('Loading BP folders…'); loadFolders().then(openAddAgreements); return; }
   const picked = new Set();
-  openDrawer('Add agreements', 'The AI reads each PDF and pulls out the pricing', `
-    ${P.data.hasKey ? '' : `<div class="warnbox mb">The Claude API key isn't set yet, so reading will fail until it's added in Apps Script.</div>`}
+  openDrawer('Add agreements', 'Reads Section A, Section B, deductions and the Adder List', `
     <div class="card"><b>1. Choose the active BPs</b>
       <input type="search" id="afq" placeholder="Search BP folders…" style="margin:10px 0 8px">
       <div id="afList" style="max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:9px;padding:6px"></div>
@@ -925,7 +1168,7 @@ function openAddAgreements(){
     </div>
     <div id="afFiles"></div>
     <div class="card"><b>Or upload a new agreement</b>
-      <p class="muted" style="margin:4px 0 10px">It's saved into that BP's folder, then read by the AI.</p>
+      <p class="muted" style="margin:4px 0 10px">It's saved into that BP's folder, then read.</p>
       <select id="auBp" class="mb"><option value="">Choose BP folder…</option>${folderOptions()}</select>
       <label class="drop"><input type="file" id="auFile" accept=".pdf,application/pdf">📎 Choose a PDF</label>
       <div class="prog" id="auProg"></div>
@@ -947,9 +1190,10 @@ function openAddAgreements(){
     const f = e.target.files[0]; if (!f) return;
     if (!$('#auBp').value){ toast('Choose the BP folder first.', true); e.target.value = ''; return; }
     if (f.size > 20 * 1024 * 1024){ toast('PDF is larger than 20 MB.', true); return; }
-    $('#auProg').innerHTML = '<span class="spin" style="width:14px;height:14px;border-width:2px"></span> Uploading and reading… this can take up to a minute.';
+    $('#auProg').innerHTML = '<span class="spin" style="width:14px;height:14px;border-width:2px"></span> Uploading and reading…';
     try {
-      const r = await sapi('pricingUpload', { folderId: $('#auBp').value, fileName: f.name, mimeType: f.type, data: await readB64(f) });
+      const up = await sapi('pricingUpload', { folderId: $('#auBp').value, fileName: f.name, mimeType: f.type, data: await readB64(f) });
+      const r = await readAgreement(up.fileId, $('#auBp').value);
       $('#auProg').innerHTML = `✅ Read <b>${esc(r.fileName)}</b>: ${r.count} price item${r.count === 1 ? '' : 's'} found. ${esc(r.summary || '')}`;
       setPricing(await loadPricing());
     } catch(err){ $('#auProg').innerHTML = `<span style="color:var(--bad)">❌ ${esc(err.message)}</span>`; }
@@ -966,9 +1210,9 @@ function renderAgreementFiles(groups){
       ${g.files.length ? g.files.map(f => `<label class="doc-ck" style="padding:6px 0"><input type="checkbox" data-file="${esc(f.id)}" data-folder="${esc(g.folderId)}" data-name="${esc(f.name)}" ${f.ok ? '' : 'disabled'} ${f.ok && f.likely && f.status !== 'Done' ? 'checked' : ''}>
         <div>${esc(f.name)} ${f.status === 'Done' ? '<span class="chip c-ok">read</span>' : ''}${f.status === 'Error' ? '<span class="chip c-redo">error</span>' : ''}${f.ok ? '' : '<small>Not a PDF — save it as PDF to include it</small>'}<div class="afst muted" id="st-${esc(f.id)}"></div></div></label>`).join('')
         : '<p class="muted">No files in this folder.</p>'}</div>`).join('') : '<p class="muted">No files found.</p>'}
-    <div style="margin-top:12px"><button class="btn" id="afRun">Read pricing with AI</button> <span class="muted" id="afRunInfo"></span></div></div>`;
+    <div style="margin-top:12px"><button class="btn" id="afRun">Read pricing</button> <span class="muted" id="afRunInfo"></span></div></div>`;
   const run = $('#afRun');
-  const count = () => { const n = box.querySelectorAll('input[data-file]:checked').length; run.textContent = `Read pricing from ${n} file${n === 1 ? '' : 's'} with AI`; run.disabled = !n; };
+  const count = () => { const n = box.querySelectorAll('input[data-file]:checked').length; run.textContent = `Read pricing from ${n} file${n === 1 ? '' : 's'}`; run.disabled = !n; };
   box.querySelectorAll('input[data-file]').forEach(c => c.onchange = count); count();
   run.onclick = async () => {
     const list = [...box.querySelectorAll('input[data-file]:checked')];
@@ -979,14 +1223,14 @@ function renderAgreementFiles(groups){
       $('#afRunInfo').textContent = `Reading ${n + 1} of ${list.length}…`;
       st.innerHTML = '<span class="spin" style="width:12px;height:12px;border-width:2px"></span> reading…';
       try {
-        const r = await sapi('pricingExtract', { fileId: c.dataset.file, folderId: c.dataset.folder });
+        const r = await readAgreement(c.dataset.file, c.dataset.folder);
         ok++; found += r.count;
         st.innerHTML = `<span style="color:var(--ok)">✅ ${r.count} item${r.count === 1 ? '' : 's'}${r.docType ? ' · ' + esc(r.docType) : ''}</span>`;
       } catch(e){ st.innerHTML = `<span style="color:var(--bad)">❌ ${esc(e.message)}</span>`; }
     }
     $('#afRunInfo').textContent = `Done: ${ok} of ${list.length} read, ${found} price items found. Review them on the pricing page.`;
     try { setPricing(await loadPricing()); } catch(e){}
-    toast('AI reading finished');
+    toast('Finished reading');
   };
 }
 
@@ -996,17 +1240,17 @@ function openFeedInfo(){
     <div class="card"><label class="f">Pricing feed link (keep it private, it works like a password)</label>
       <input type="text" id="feedU" readonly value="${esc(u)}" style="font-size:12.5px">
       <div class="footer-acts" style="margin-top:10px"><button class="btn sm" id="feedCopy">Copy link</button><button class="btn sm ghost" id="feedNew">Make a new link</button></div>
-      <p class="muted" style="margin-top:10px">Add <code>&bp=Name</code> to get one BP only. Prices count as soon as the AI reads them (each item says <code>verified: true/false</code>). For each item the newest effective date wins, so amendments replace older prices automatically.</p>
+      <p class="muted" style="margin-top:10px">Add <code>&bp=Name</code> to get one BP only. Prices count as soon as an agreement is read (each item says <code>verified: true/false</code>). For each item the newest effective date wins, so amendments replace older prices automatically.</p>
     </div>
     <div class="card"><b>What the other app receives</b>
 <pre style="white-space:pre-wrap;font-size:12.5px;background:#faf8f3;border-radius:8px;padding:10px;margin:8px 0 0">{
   "ok": true,
   "partners": [{
     "bp": "Sunrise Builders LLC",
-    "perWatt": { "install": 0.62, "install_bonus": 0.03, "scheduling": 0.02 },
+    "perWatt": { "install_option_a": 0.66, "install_option_b": 0.63, "scheduling_bonus": 0.02, "inspection_bonus": 0.05 },
     "items": [
-      { "category": "Install rate", "item": "Install", "amount": 0.62, "unit": "$/W", "conditions": "", "effectiveDate": "2026-01-01", "verified": true },
-      { "category": "Adder / allowance", "item": "MPU", "amount": 3500, "unit": "$ flat", "conditions": "up to" }
+      { "category": "Install rate", "item": "Install – Option A", "amount": 0.66, "unit": "$/W", "conditions": "Includes: Installation; Site Survey; …", "effectiveDate": "2026-03-25", "verified": true },
+      { "category": "Adder / allowance", "item": "MPU (Main Service Panel Upgrade)", "amount": 2500, "unit": "$ flat", "conditions": "Base price (Labor and Material)" }
     ]
   }]
 }</pre></div>`);
