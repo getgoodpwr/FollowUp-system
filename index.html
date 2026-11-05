@@ -236,7 +236,7 @@ async function sapi(action, payload={}){
 }
 function signOutLocal(){ ['bpf_session','bpf_email','bpf_boot','bpf_folders'].forEach(k => store.del(k)); S.session = null; $('#logoutBtn').style.display = 'none'; closeDrawer(); }
 
-function applyBoot(b){ S.email = b.email; S.sender = b.sender; S.states = b.states; S.catalog = b.catalog; S.reqs = b.requests; }
+function applyBoot(b){ S.email = b.email; S.sender = b.sender; S.testMode = !!b.testMode; S.testEmail = b.testEmail || ''; S.states = b.states; S.catalog = b.catalog; S.reqs = b.requests; }
 
 async function staffBoot(){
   if (!S.session) return loginView();
@@ -292,13 +292,15 @@ async function loadFolders(refresh){
 
 function updateHeader(){
   const t = app.querySelector('.tabs button[data-t=list]'); if (t) t.textContent = `Requests (${S.reqs.length})`;
-  const w = $('#senderWarn'); if (w) w.style.display = S.sender && !S.sender.sendsAsCompliance ? 'block' : 'none';
+  const w = $('#senderWarn'); if (w) w.style.display = S.sender && !S.sender.sendsAsCompliance && !S.testMode ? 'block' : 'none';
+  const tw = $('#testWarn'); if (tw){ tw.style.display = S.testMode ? 'block' : 'none'; tw.innerHTML = `<b>🧪 TEST MODE is on.</b> Every email goes to ${esc(S.testEmail)} instead of the BP. Turn off TEST_MODE in Code.gs before real use.`; }
 }
 
 function staffView(){
   app.innerHTML = `
     <h1>BP Document Follow-Up</h1>
     <p class="sub">Request missing documents from Build Partners, track uploads and send follow-ups.${S.email ? ` <span class="muted">Signed in as ${esc(S.email)}</span>` : ''}</p>
+    <div class="warnbox mb" id="testWarn" style="display:none;background:var(--info-l);color:var(--info)"></div>
     <div class="warnbox mb" id="senderWarn" style="display:none"><b>Emails are paused.</b> compliance@getgoodpwr.com isn't set up as a "Send mail as" address on the deploying account yet, so nothing will be sent to BPs until it is.</div>
     <div class="tabs"><button data-t="list" class="${S.tab==='list'?'on':''}">Requests (${S.reqs.length})</button><button data-t="new" class="${S.tab==='new'?'on':''}">+ New request</button></div>
     <div id="pane"></div>`;
