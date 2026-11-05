@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GoodPWR Build Partner Documents</title>
+<link rel="icon" href="logo.png">
+<link rel="apple-touch-icon" href="logo.png">
+<link rel="preconnect" href="https://script.google.com">
+<link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#161616; --ink2:#4a4a4a; --mute:#8a8a8a; --line:#e6e3dc; --bg:#f6f4ef; --card:#fff;
+    --sun:#f5a400; --sun-d:#c98500; --sun-l:#fff4d9;
+    --ok:#1e8a4c; --ok-l:#e3f4ea; --warn:#b54708; --warn-l:#fdecdc; --bad:#b42318; --bad-l:#fde8e6; --info:#2a5db0; --info-l:#e6eefb;
+    --r:12px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:15px;line-height:1.5}
+  a{color:var(--sun-d)}
+  .top{background:#141414;color:#fff;padding:14px 20px;display:flex;align-items:center;gap:12px}
+  .top img{height:38px;width:auto}
+  .brand{font-weight:700;font-size:17px;letter-spacing:.2px}
+  .brand span{display:block;font-weight:500;font-size:12px;color:#c9c9c9;letter-spacing:.4px;text-transform:uppercase}
+  .top .sp{flex:1}
+  .top button{background:transparent;color:#ddd;border:1px solid #444;border-radius:8px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}
+  main{max-width:980px;margin:0 auto;padding:24px 16px 80px}
+  .narrow{max-width:720px;margin:0 auto}
+  h1{font-size:24px;margin:0 0 6px} h2{font-size:18px;margin:0 0 12px} h3{font-size:16px;margin:0}
+  .sub{color:var(--ink2);margin:0 0 18px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:14px}
+  .btn{display:inline-flex;align-items:center;gap:6px;background:var(--sun);color:#111;border:0;border-radius:9px;padding:10px 16px;font:inherit;font-weight:600;cursor:pointer}
+  .btn:hover{background:#ffb31a} .btn:disabled{opacity:.55;cursor:not-allowed}
+  .btn.ghost{background:#fff;border:1px solid var(--line);color:var(--ink)} .btn.ghost:hover{background:#faf8f3}
+  .btn.sm{padding:6px 11px;font-size:13px;border-radius:7px}
+  .btn.ok{background:var(--ok);color:#fff} .btn.bad{background:#fff;color:var(--bad);border:1px solid #f1c1bc}
+  label.f{display:block;font-weight:600;font-size:13px;margin:0 0 5px;color:var(--ink2)}
+  input[type=text],input[type=email],input[type=password],input[type=search],select,textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:9px;font:inherit;background:#fff;color:var(--ink)}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--sun);outline-offset:-1px;border-color:var(--sun)}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:14px} .row>div{min-width:0}
+  .mb{margin-bottom:14px}
+  .chip{display:inline-block;font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;white-space:nowrap}
+  .c-missing{background:var(--sun-l);color:#8a5a00} .c-redo{background:var(--bad-l);color:var(--bad)}
+  .c-sub{background:var(--info-l);color:var(--info)} .c-ok{background:var(--ok-l);color:var(--ok)} .c-muted{background:#eee;color:#666}
+  .bar{height:8px;background:#ece8df;border-radius:99px;overflow:hidden} .bar i{display:block;height:100%;background:var(--sun);border-radius:99px;transition:width .3s}
+  .muted{color:var(--mute);font-size:13px}
+  .tabs{display:flex;gap:6px;margin-bottom:18px;border-bottom:1px solid var(--line)}
+  .tabs button{background:none;border:0;border-bottom:3px solid transparent;padding:10px 14px;font:inherit;font-weight:600;color:var(--ink2);cursor:pointer}
+  .tabs button.on{border-color:var(--sun);color:var(--ink)}
+  .grid-states{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
+  .ck{display:flex;align-items:flex-start;gap:8px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;cursor:pointer;font-size:14px;background:#fff}
+  .ck input{margin-top:3px;accent-color:var(--sun-d)}
+  .ck.on{border-color:var(--sun);background:var(--sun-l)}
+  .doc-ck{display:flex;gap:10px;padding:10px 0;border-top:1px solid var(--line)} .doc-ck:first-child{border-top:0}
+  .doc-ck input{margin-top:4px;accent-color:var(--sun-d);width:16px;height:16px;flex:none}
+  .doc-ck small{display:block;color:var(--mute);font-size:12.5px;line-height:1.45}
+  .grp{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--sun-d);margin-left:6px}
+  .warnbox{background:var(--warn-l);color:var(--warn);border-radius:9px;padding:10px 12px;font-size:13.5px;margin-top:8px}
+  .req{display:grid;grid-template-columns:1.6fr 1fr auto;gap:14px;align-items:center;cursor:pointer}
+  .req:hover{border-color:#d8cfbd}
+  .req .meta{font-size:12.5px;color:var(--mute)}
+  .filters{display:flex;gap:10px;margin-bottom:14px} .filters input{flex:1} .filters select{width:170px}
+  /* BP view */
+  .hello{background:#141414;color:#fff;border-radius:var(--r);padding:22px;margin-bottom:16px}
+  .hello h1{color:#fff} .hello p{color:#d6d6d6;margin:0}
+  .hello .bar{background:#333;margin-top:14px}
+  .item-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:6px}
+  .hint{color:var(--ink2);font-size:14px;margin:0 0 12px}
+  .note{background:var(--bad-l);color:var(--bad);border-radius:8px;padding:8px 11px;font-size:13.5px;margin-bottom:12px}
+  .drop{display:flex;align-items:center;justify-content:center;gap:8px;border:1.5px dashed #d6cdb8;border-radius:10px;padding:14px;cursor:pointer;color:var(--ink2);font-weight:600;font-size:14px;background:#fffdf8;text-align:center}
+  .drop:hover,.drop.drag{border-color:var(--sun);background:var(--sun-l)}
+  .drop input{display:none}
+  .okline{color:var(--ok);font-size:13.5px;font-weight:600;margin:10px 0 0}
+  .prog{font-size:13px;color:var(--info);margin-top:8px}
+  .done{background:var(--ok-l);border:1px solid #bfe3cc;color:#14532d;border-radius:var(--r);padding:16px 18px;margin-bottom:14px;font-weight:500}
+  /* drawer */
+  .shade{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;z-index:20}
+  .drawer{position:fixed;top:0;right:0;height:100%;width:min(560px,100%);background:var(--bg);z-index:21;transform:translateX(100%);transition:transform .25s;overflow-y:auto;box-shadow:-8px 0 30px rgba(0,0,0,.15)}
+  .drawer.open{transform:none} .shade.open{display:block}
+  .drawer header{position:sticky;top:0;background:#141414;color:#fff;padding:16px 18px;display:flex;gap:10px;align-items:flex-start;z-index:1}
+  .drawer header h2{color:#fff;margin:0} .drawer header .x{margin-left:auto;background:none;border:0;color:#fff;font-size:24px;cursor:pointer;line-height:1}
+  .drawer .body{padding:16px}
+  .di{border-top:1px solid var(--line);padding:12px 0} .di:first-child{border-top:0;padding-top:0}
+  .di .acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .di .files a{display:block;font-size:13px;word-break:break-all}
+  .kv{font-size:13.5px;color:var(--ink2);margin:2px 0}
+  .footer-acts{display:flex;gap:8px;flex-wrap:wrap}
+  #toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(120px);background:#141414;color:#fff;padding:11px 18px;border-radius:10px;font-size:14px;transition:transform .25s;z-index:40;max-width:92vw}
+  #toast.show{transform:translateX(-50%)} #toast.err{background:var(--bad)}
+  .center{text-align:center;padding:40px 0;color:var(--mute)}
+  .spin{width:22px;height:22px;border:3px solid #e2dccd;border-top-color:var(--sun);border-radius:50%;animation:sp 0.8s linear infinite;display:inline-block;vertical-align:middle}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  @media (max-width:640px){
+    .row{grid-template-columns:1fr} .req{grid-template-columns:1fr} .filters{flex-direction:column} .filters select{width:100%}
+    main{padding:18px 16px 70px}
+  }
+</style>
+</head>
+<body>
+<header class="top">
+  <img id="logo" alt="GoodPWR" style="display:none">
+  <div class="brand">GoodPWR<span>Build Partner Documents</span></div>
+  <div class="sp"></div>
+  <button id="logoutBtn" style="display:none">Log out</button>
+</header>
+<main id="app"><div class="center"><span class="spin"></span></div></main>
+<div class="shade" id="shade"></div>
+<aside class="drawer" id="drawer"></aside>
+<div id="toast"></div>
+
+<script>
+/* ===== CONFIG ===== */
+const API_URL  = 'https://script.google.com/macros/s/AKfycbzmVgj1hEmPZVIfoomyi3iqVLOSWRtikhBTz9bGRckjXflbU0a4Ln1xXFXez-8W_pylQA/exec';
+const LOGO_URL = 'logo.png'; // GoodPWR skull logo uploaded to the same GitHub repo (also used as the tab icon)
+
+/* ===== Helpers ===== */
+const $ = s => document.querySelector(s);
+const app = $('#app');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const store = {
+  get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } },
+  set(k,v){ try { localStorage.setItem(k,v); } catch(e){} },
+  del(k){ try { localStorage.removeItem(k); } catch(e){} }
+};
+let toastT;
+function toast(msg, err){ const t=$('#toast'); t.textContent=msg; t.className=err?'show err':'show'; clearTimeout(toastT); toastT=setTimeout(()=>t.className=err?'err':'',3500); }
+async function api(action, payload={}){
+  const res = await fetch(API_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({action, ...payload}) });
+  const j = await res.json();
+  if(!j.ok) throw new Error(j.error || 'Something went wrong.');
+  return j.data;
+}
+const fmtDate = iso => iso ? new Date(iso).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}) : '—';
+const chip = (status, bp) => {
+  const m = { 'Missing':['c-missing', bp?'Needed':'Missing'], 'Needs Redo':['c-redo', bp?'Please re-upload':'Needs redo'],
+    'Submitted':['c-sub', bp?'Received':'Submitted'], 'Approved':['c-ok','Approved'],
+    'Draft':['c-muted','Draft'], 'Sent':['c-missing','Sent'], 'In Progress':['c-sub','In progress'], 'Complete':['c-sub','All received'], 'Closed':['c-muted','Closed'] };
+  const [c,t] = m[status] || ['c-muted', status];
+  return `<span class="chip ${c}">${esc(t)}</span>`;
+};
+const readB64 = file => new Promise((ok,no)=>{ const r=new FileReader(); r.onload=()=>ok(String(r.result).split(',')[1]); r.onerror=no; r.readAsDataURL(file); });
+
+if (LOGO_URL){
+  const l=$('#logo'); l.onload=()=>l.style.display='block'; l.onerror=()=>l.style.display='none'; l.src=LOGO_URL;
+  document.querySelectorAll('link[rel=icon],link[rel=apple-touch-icon]').forEach(x => x.href = LOGO_URL);
+}
+
+/* =========================================================
+   BP UPLOAD VIEW
+   ========================================================= */
+let BP = null;
+async function bpView(){
+  try { BP = await api('getRequest', { token: TOKEN }); renderBP(); }
+  catch(e){ app.innerHTML = `<div class="card narrow"><h2>We couldn't open this page</h2><p>${esc(e.message)}</p></div>`; }
+}
+
+function renderBP(){
+  const total = BP.items.length;
+  const done = BP.items.filter(i => i.status==='Submitted' || i.status==='Approved').length;
+  const pct = total ? Math.round(done/total*100) : 0;
+  const allIn = total && done === total;
+  app.innerHTML = `<div class="narrow">
+    <div class="hello">
+      <h1>Hi ${esc(BP.contact)}! 👋</h1>
+      <p>Thank you for helping us update <b style="color:#fff">${esc(BP.bpName)}</b>'s file with GoodPWR Solar. Please upload the documents below. You can do them all now or come back to this link anytime.</p>
+      <div class="bar"><i style="width:${pct}%"></i></div>
+      <p style="margin-top:8px;font-size:13px">${done} of ${total} received</p>
+    </div>
+    ${BP.closed ? `<div class="card"><b>This request has been closed.</b> If you still need to send something, please email <a href="mailto:${esc(BP.compliance)}">${esc(BP.compliance)}</a>.</div>` : ''}
+    ${allIn && !BP.closed ? `<div class="done">✓ All set! We've received everything. Thank you so much — our team will review and reach out only if something needs a quick update.</div>` : ''}
+    ${BP.items.map(itemCard).join('')}
+    <p class="muted" style="text-align:center;margin-top:20px">Files go straight to GoodPWR's secure compliance folder. Max ${BP.maxMb} MB per file.<br>Questions? Email <a href="mailto:${esc(BP.compliance)}">${esc(BP.compliance)}</a></p>
+  </div>`;
+  app.querySelectorAll('.drop input').forEach(inp => inp.addEventListener('change', () => uploadFiles(inp.dataset.key, inp.files)));
+  app.querySelectorAll('.drop').forEach(d => {
+    d.addEventListener('dragover', e => { e.preventDefault(); d.classList.add('drag'); });
+    d.addEventListener('dragleave', () => d.classList.remove('drag'));
+    d.addEventListener('drop', e => { e.preventDefault(); d.classList.remove('drag'); uploadFiles(d.querySelector('input').dataset.key, e.dataTransfer.files); });
+  });
+}
+
+function itemCard(i){
+  const canUpload = !BP.closed && i.status !== 'Approved';
+  return `<div class="card" id="it-${esc(i.key)}">
+    <div class="item-head"><h3>${esc(i.label)}</h3>${chip(i.status, true)}</div>
+    <p class="hint">${esc(i.hint)}</p>
+    ${(i.links||[]).length ? `<p style="margin:-4px 0 12px;display:flex;flex-wrap:wrap;gap:8px">${i.links.map(l => `<a class="btn sm ghost" href="${esc(l.url)}" target="_blank" rel="noopener">📄 ${esc(l.label)}</a>`).join('')}</p>` : ''}
+    ${i.note ? `<div class="note"><b>Quick update needed:</b> ${esc(i.note)}</div>` : ''}
+    ${canUpload ? `<label class="drop"><input type="file" multiple data-key="${esc(i.key)}" accept=".pdf,.jpg,.jpeg,.png,.heic,.doc,.docx,.xls,.xlsx">
+      📎 ${i.status==='Submitted' ? 'Upload another file' : 'Tap to choose file(s) or drop them here'}</label>` : ''}
+    <div class="prog" id="pg-${esc(i.key)}"></div>
+    ${i.status==='Submitted' ? `<p class="okline">✓ Received${i.fileCount>1?` (${i.fileCount} files)`:''} — thank you!</p>` : ''}
+    ${i.status==='Approved' ? `<p class="okline">✓ Approved — nothing else needed here.</p>` : ''}
+  </div>`;
+}
+
+async function uploadFiles(key, fileList){
+  const files = [...fileList]; if(!files.length) return;
+  const pg = document.getElementById('pg-'+key);
+  const tooBig = files.find(f => f.size > BP.maxMb*1024*1024);
+  if (tooBig){ toast(`"${tooBig.name}" is over ${BP.maxMb} MB. Please upload a smaller file.`, true); return; }
+  document.querySelectorAll(`#it-${CSS.escape(key)} .drop`).forEach(d => d.style.pointerEvents='none');
+  try {
+    let fresh = null;
+    for (let n=0; n<files.length; n++){
+      const f = files[n];
+      pg.innerHTML = `<span class="spin" style="width:14px;height:14px;border-width:2px"></span> Uploading ${files.length>1?`${n+1} of ${files.length}: `:''}${esc(f.name)}…`;
+      const data = await readB64(f);
+      fresh = await api('upload', { token: TOKEN, itemKey: key, fileName: f.name, mimeType: f.type, data });
+    }
+    toast(files.length>1 ? 'Files uploaded. Thank you!' : 'Uploaded. Thank you!');
+    BP = fresh;
+    renderBP();
+    const el = document.getElementById('it-'+key); if (el) el.scrollIntoView({behavior:'smooth', block:'center'});
+  } catch(e){
+    pg.textContent = '';
+    toast(e.message, true);
+    document.querySelectorAll(`#it-${CSS.escape(key)} .drop`).forEach(d => d.style.pointerEvents='');
+  }
+}
+
+/* =========================================================
+   STAFF DASHBOARD  (GoodPWR emails only)
+   ========================================================= */
+const S = { session: store.get('bpf_session'), email: store.get('bpf_email'), states: [], catalog: [], reqs: [], folders: null, tab: 'list', open: null };
+const readCache = k => { try { return JSON.parse(store.get(k) || 'null'); } catch(e){ return null; } };
+
+async function sapi(action, payload={}){
+  try { return await api(action, { session: S.session, ...payload }); }
+  catch(e){
+    if (String(e.message).indexOf('SIGNIN:') === 0){ signOutLocal(); loginView(e.message.replace('SIGNIN:','').trim()); throw new Error('Please sign in.'); }
+    throw e;
+  }
+}
+function signOutLocal(){ ['bpf_session','bpf_email','bpf_boot','bpf_folders'].forEach(k => store.del(k)); S.session = null; $('#logoutBtn').style.display = 'none'; closeDrawer(); }
+
+function applyBoot(b){ S.email = b.email; S.sender = b.sender; S.states = b.states; S.catalog = b.catalog; S.reqs = b.requests; }
+
+async function staffBoot(){
+  if (!S.session) return loginView();
+  $('#logoutBtn').style.display = 'inline-block';
+  // 1) Show the last saved copy instantly, 2) refresh from the server in the background.
+  const cached = readCache('bpf_boot');
+  if (cached){ applyBoot(cached); staffView(); }
+  try {
+    const b = await sapi('boot');
+    store.set('bpf_boot', JSON.stringify(b));
+    applyBoot(b);
+    if (!cached || S.tab === 'list') staffView(); else updateHeader();
+  } catch(e){ if (S.session && !cached) app.innerHTML = `<div class="card narrow"><p>${esc(e.message)}</p></div>`; }
+  S.folders = readCache('bpf_folders');
+  loadFolders(); // warm up the folder list for the New request tab
+}
+
+$('#logoutBtn').onclick = () => { if (S.session) api('logout', { session: S.session }).catch(()=>{}); signOutLocal(); loginView(); };
+
+function loginView(msg){
+  app.innerHTML = `<div class="card narrow" style="max-width:420px;margin-top:40px">
+    <h2>Staff sign in</h2><p class="sub">For GoodPWR team members only. We'll email a 6-digit code to your work inbox.</p>
+    <form id="lf1"><label class="f">Work email</label><input type="email" id="le" placeholder="you@getgoodpwr.com" class="mb" autocomplete="email" value="${esc(S.email||'')}">
+    <button class="btn" id="lb1" style="width:100%;justify-content:center">Send sign-in code</button></form>
+    <form id="lf2" style="display:none"><label class="f">6-digit code</label><input type="text" id="lc" inputmode="numeric" maxlength="6" class="mb" autocomplete="one-time-code" placeholder="••••••">
+    <button class="btn" id="lb2" style="width:100%;justify-content:center">Sign in</button>
+    <p class="muted" style="margin-top:10px">Didn't get it? Check spam, or <a href="#" id="lback">use a different email</a>.</p></form>
+    <p id="lmsg" style="color:var(--bad);font-size:13.5px;margin-top:10px">${esc(msg||'')}</p></div>`;
+  const m = t => $('#lmsg').textContent = t || '';
+  $('#lf1').onsubmit = async e => {
+    e.preventDefault(); const email = $('#le').value.trim().toLowerCase();
+    if (!/@getgoodpwr\.com$/.test(email)) return m('Please use your @getgoodpwr.com email.');
+    $('#lb1').disabled = true; $('#lb1').textContent = 'Sending…'; m('');
+    try { await api('requestCode', { email }); S.email = email; store.set('bpf_email', email); $('#lf1').style.display='none'; $('#lf2').style.display='block'; $('#lc').focus(); toast('Code sent to ' + email); }
+    catch(err){ m(err.message); } finally { $('#lb1').disabled = false; $('#lb1').textContent = 'Send sign-in code'; }
+  };
+  $('#lf2').onsubmit = async e => {
+    e.preventDefault(); $('#lb2').disabled = true; $('#lb2').textContent = 'Checking…'; m('');
+    try { const r = await api('verifyCode', { email: S.email, code: $('#lc').value }); S.session = r.session; store.set('bpf_session', r.session); app.innerHTML = '<div class="center"><span class="spin"></span></div>'; staffBoot(); }
+    catch(err){ m(err.message); $('#lb2').disabled = false; $('#lb2').textContent = 'Sign in'; }
+  };
+  $('#lback').onclick = e => { e.preventDefault(); $('#lf2').style.display='none'; $('#lf1').style.display='block'; };
+}
+
+async function loadReqs(){
+  const b = await sapi('boot');
+  store.set('bpf_boot', JSON.stringify(b)); applyBoot(b); updateHeader();
+}
+async function loadFolders(refresh){
+  try { S.folders = await sapi('folders', { refresh: !!refresh }); store.set('bpf_folders', JSON.stringify(S.folders)); if (S.tab==='new' && window._drawFolders) window._drawFolders(); }
+  catch(e){}
+}
+
+function updateHeader(){
+  const t = app.querySelector('.tabs button[data-t=list]'); if (t) t.textContent = `Requests (${S.reqs.length})`;
+  const w = $('#senderWarn'); if (w) w.style.display = S.sender && !S.sender.sendsAsCompliance ? 'block' : 'none';
+}
+
+function staffView(){
+  app.innerHTML = `
+    <h1>BP Document Follow-Up</h1>
+    <p class="sub">Request missing documents from Build Partners, track uploads and send follow-ups.${S.email ? ` <span class="muted">Signed in as ${esc(S.email)}</span>` : ''}</p>
+    <div class="warnbox mb" id="senderWarn" style="display:none"><b>Emails are paused.</b> compliance@getgoodpwr.com isn't set up as a "Send mail as" address on the deploying account yet, so nothing will be sent to BPs until it is.</div>
+    <div class="tabs"><button data-t="list" class="${S.tab==='list'?'on':''}">Requests (${S.reqs.length})</button><button data-t="new" class="${S.tab==='new'?'on':''}">+ New request</button></div>
+    <div id="pane"></div>`;
+  updateHeader();
+  app.querySelectorAll('.tabs button').forEach(b => b.onclick = () => { S.tab=b.dataset.t; staffView(); });
+  S.tab === 'list' ? listPane() : newPane();
+}
+
+/* ----- Requests list ----- */
+function listPane(){
+  const p = $('#pane'); if (!p) return;
+  const keepQ = $('#q') ? $('#q').value : '', keepF = $('#fs') ? $('#fs').value : '';
+  p.innerHTML = `<div class="filters"><input type="search" id="q" placeholder="Search BP, contact or email">
+    <select id="fs"><option value="">All statuses</option><option value="open">Open (needs docs)</option><option>Complete</option><option>Approved</option><option>Closed</option></select></div>
+    <div id="rl"></div>`;
+  $('#q').value = keepQ; $('#fs').value = keepF;
+  const draw = () => {
+    const q = $('#q').value.toLowerCase(), fs = $('#fs').value;
+    const list = S.reqs.filter(r =>
+      (!q || [r.bpName,r.contact,r.email].join(' ').toLowerCase().includes(q)) &&
+      (!fs || (fs==='open' ? ['Draft','Sent','In Progress'].includes(r.status) : r.status===fs)));
+    $('#rl').innerHTML = list.length ? list.map(r => {
+      const pct = r.total ? Math.round(r.done/r.total*100) : 0;
+      return `<div class="card req" data-id="${esc(r.id)}">
+        <div><h3>${esc(r.bpName)}</h3><div class="meta">${esc(r.contact||'')} · ${esc(r.email)}</div></div>
+        <div><div class="bar"><i style="width:${pct}%"></i></div><div class="meta" style="margin-top:4px">${r.done}/${r.total} received${r.redo?` · ${r.redo} need redo`:''} · emailed ${fmtDate(r.lastEmailed)}${r.followUps?` · ${r.followUps} follow-up${r.followUps>1?'s':''}`:''}</div></div>
+        <div>${chip(r.status)}</div></div>`;
+    }).join('') : `<div class="card center">${S.reqs.length ? 'No matches.' : 'No requests yet. Click <b>+ New request</b> to send your first one.'}</div>`;
+    $('#rl').querySelectorAll('.req').forEach(c => c.onclick = () => openReq(c.dataset.id));
+  };
+  $('#q').oninput = draw; $('#fs').onchange = draw; draw();
+}
+
+/* ----- New request ----- */
+const F = { states: [], lightreach: false, wcMode: 'coi', unchecked: new Set() };
+function newPane(){
+  const p = $('#pane');
+  p.innerHTML = `<form id="nf">
+    <div class="card"><h2>Build Partner</h2>
+      <div class="row mb"><div><label class="f">Company / BP name *</label><input type="text" id="bpName" required></div>
+        <div><label class="f">Contact name</label><input type="text" id="contactName" placeholder="e.g. John Smith"></div></div>
+      <div class="mb"><label class="f">Contact email *</label><input type="email" id="email" required></div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline"><label class="f">BP folder in Drive *</label><a href="#" id="frefresh" class="muted">↻ Refresh list</a></div>
+      <input type="search" id="fsearch" placeholder="Search folders…" style="margin-bottom:6px">
+      <select id="folder" size="5" style="height:auto"></select>
+      <div id="newFolderWrap" style="display:none;margin-top:8px"><label class="f">New folder name</label><input type="text" id="newFolderName"></div>
+      <p class="muted" style="margin:6px 0 0">Uploads are saved into this BP's existing folder.</p>
+    </div>
+    <div class="card"><h2>Where do they build?</h2>
+      <div class="grid-states" id="states">${S.states.map(s => `<label class="ck ${F.states.includes(s)?'on':''}"><input type="checkbox" value="${esc(s)}" ${F.states.includes(s)?'checked':''}>${esc(s)}</label>`).join('')}</div>
+      <div style="margin-top:14px"><label class="ck" style="display:inline-flex"><input type="checkbox" id="lr" ${F.lightreach?'checked':''}> Builds LightReach projects</label></div>
+      <div style="margin-top:14px"><label class="f">Workers' comp</label>
+        <label class="ck" style="display:inline-flex;margin-right:6px"><input type="radio" name="wc" value="coi" ${F.wcMode==='coi'?'checked':''}> COI (default)</label>
+        <label class="ck" style="display:inline-flex"><input type="radio" name="wc" value="affidavit" ${F.wcMode==='affidavit'?'checked':''}> Exemption affidavit (exception)</label>
+        <div id="wcWarn"></div></div>
+    </div>
+    <div class="card"><h2>Documents to request</h2><p class="muted" style="margin-top:-6px">Untick anything already on file.</p><div id="docs"></div></div>
+    <div class="card"><label class="f">Internal notes (staff only)</label><textarea id="notes" rows="2"></textarea></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn" id="sendBtn">Send request email</button><button type="button" class="btn ghost" id="draftBtn">Save without sending</button></div>
+  </form>`;
+
+  const drawFolders = window._drawFolders = () => {
+    const sel = $('#folder'); if (!sel) return;
+    if (!S.folders){ sel.innerHTML = '<option value="">Loading folders…</option>'; return; }
+    const q = $('#fsearch').value.toLowerCase(), cur = sel.value;
+    const list = S.folders.filter(f => !q || f.name.toLowerCase().includes(q));
+    sel.innerHTML = `<option value="__new__">➕ Create a new folder</option>` + list.map(f => `<option value="${esc(f.id)}">${esc(f.name)}</option>`).join('');
+    if ([...sel.options].some(o => o.value===cur)) sel.value = cur;
+    else if (list.length && q) sel.value = list[0].id;
+    onFolder();
+  };
+  const onFolder = () => { const isNew = $('#folder').value === '__new__'; $('#newFolderWrap').style.display = isNew ? 'block' : 'none'; if (isNew && !$('#newFolderName').value) $('#newFolderName').value = $('#bpName').value; };
+  $('#fsearch').oninput = drawFolders;
+  $('#folder').onchange = onFolder;
+  $('#frefresh').onclick = e => { e.preventDefault(); S.folders = null; drawFolders(); loadFolders(true); };
+  $('#bpName').oninput = () => { $('#fsearch').value = $('#bpName').value; drawFolders(); if ($('#folder').value==='__new__') $('#newFolderName').value = $('#bpName').value; };
+  drawFolders();
+
+  $('#states').addEventListener('change', e => {
+    if (e.target.type!=='checkbox') return;
+    e.target.parentElement.classList.toggle('on', e.target.checked);
+    F.states = [...$('#states').querySelectorAll('input:checked')].map(i => i.value);
+    drawDocs();
+  });
+  $('#lr').onchange = e => { F.lightreach = e.target.checked; drawDocs(); };
+  p.querySelectorAll('input[name=wc]').forEach(r => r.onchange = () => { F.wcMode = r.value; drawDocs(); });
+  $('#nf').onsubmit = e => { e.preventDefault(); submitNew(true); };
+  $('#draftBtn').onclick = () => submitNew(false);
+  drawDocs();
+}
+
+// Builds the document list instantly in the browser (same rules as the server).
+function pickDocs(){
+  return S.catalog.filter(d => {
+    if (d.key === 'license') return !F.states.length;
+    if (d.key === 'wc_coi') return F.wcMode === 'coi';
+    if (d.key === 'wc_aff') return F.wcMode === 'affidavit';
+    if (d.key.indexOf('st_') === 0) return F.states.includes(d.state);
+    if (d.key.indexOf('il_') === 0) return F.states.includes('Illinois');
+    if (d.key.indexOf('nv_') === 0) return F.states.includes('Nevada');
+    if (d.key.indexOf('lr_') === 0) return F.lightreach;
+    return true;
+  });
+}
+function drawDocs(){
+  $('#wcWarn').innerHTML = F.wcMode==='affidavit' ? `<div class="warnbox">Last resort only: partner has no employees, the state allows the exemption, and the financier allows it.${F.lightreach ? ' <b>LightReach does not permit exemptions.</b>' : ''}</div>` : '';
+  $('#docs').innerHTML = pickDocs().map(d => `<label class="doc-ck"><input type="checkbox" value="${esc(d.key)}" ${F.unchecked.has(d.key)?'':'checked'}>
+    <div><b>${esc(d.label)}</b>${d.group!=='Core'?`<span class="grp">${esc(d.group)}</span>`:''}<small>${esc(d.hint.length>220 ? d.hint.slice(0,220)+'…' : d.hint)}</small></div></label>`).join('');
+  $('#docs').querySelectorAll('input').forEach(i => i.onchange = () => i.checked ? F.unchecked.delete(i.value) : F.unchecked.add(i.value));
+}
+
+async function submitNew(sendNow){
+  const items = [...$('#docs').querySelectorAll('input:checked')].map(i => i.value);
+  const body = {
+    sendNow, bpName: $('#bpName').value.trim(), contactName: $('#contactName').value.trim(), email: $('#email').value.trim(),
+    folderId: $('#folder').value, newFolderName: $('#newFolderName').value.trim(),
+    states: F.states, lightreach: F.lightreach, wcMode: F.wcMode, items, notes: $('#notes').value.trim()
+  };
+  if (!body.bpName || !body.email) return toast('BP name and email are required.', true);
+  if (!body.folderId) return toast('Please pick the BP folder.', true);
+  if (!items.length) return toast('Select at least one document.', true);
+  if (sendNow && !confirm(`Send a request for ${items.length} document${items.length>1?'s':''} to ${body.email}?`)) return;
+  const btns = [$('#sendBtn'), $('#draftBtn')]; btns.forEach(b => b.disabled = true);
+  $('#sendBtn').textContent = sendNow ? 'Sending…' : 'Saving…';
+  try {
+    const r = await sapi('createRequest', body);
+    toast(sendNow ? 'Request sent! 📨' : 'Saved as draft.');
+    const newFolder = body.folderId === '__new__';
+    Object.assign(F, { states: [], lightreach: false, wcMode: 'coi', unchecked: new Set() });
+    S.tab = 'list'; openReq(r.id);
+    loadReqs().then(() => { if (S.tab==='list') listPane(); }).catch(()=>{});
+    if (newFolder) loadFolders(true);
+    staffView();
+  } catch(e){ toast(e.message, true); btns.forEach(b => b.disabled = false); $('#sendBtn').textContent = 'Send request email'; }
+}
+
+/* ----- Request drawer ----- */
+const drawer = $('#drawer'), shade = $('#shade');
+shade.onclick = closeDrawer;
+function closeDrawer(){ drawer.classList.remove('open'); shade.classList.remove('open'); S.open = null; }
+
+async function openReq(id){
+  S.open = id;
+  drawer.innerHTML = '<div class="center" style="padding-top:80px"><span class="spin"></span></div>';
+  drawer.classList.add('open'); shade.classList.add('open');
+  try { drawReq(await sapi('getRequestAdmin', { id })); }
+  catch(e){ drawer.innerHTML = `<div class="body"><p>${esc(e.message)}</p></div>`; }
+}
+
+function drawReq(d){
+  const outstanding = d.items.filter(i => i.status==='Missing' || i.status==='Needs Redo').length;
+  const closed = d.status === 'Closed';
+  drawer.innerHTML = `<header><div><h2>${esc(d.bpName)}</h2><div style="font-size:13px;color:#ccc;margin-top:3px">${esc(d.id)}</div></div><button class="x" aria-label="Close">×</button></header>
+  <div class="body">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><b>Details</b>${chip(d.status)}</div>
+      <p class="kv">👤 ${esc(d.contact||'—')} · <a href="mailto:${esc(d.email)}">${esc(d.email)}</a></p>
+      <p class="kv">📁 <a href="${esc(d.folderUrl)}" target="_blank" rel="noopener">${esc(d.folderName)}</a></p>
+      <p class="kv">📍 ${esc(d.states||'No states selected')} · LightReach: ${esc(d.lightreach)} · WC: ${esc(d.wcMode)}</p>
+      <p class="kv">✉️ Last emailed ${fmtDate(d.lastEmailed)} · ${d.followUps} follow-up${d.followUps===1?'':'s'}</p>
+      ${d.notes ? `<p class="kv">📝 ${esc(d.notes)}</p>` : ''}
+      <div class="footer-acts" style="margin-top:12px">
+        ${!closed ? `<button class="btn sm" id="fuBtn" ${outstanding?'':'disabled'}>Send follow-up${outstanding?` (${outstanding})`:''}</button>` : ''}
+        ${!closed && !d.lastEmailed ? `<button class="btn sm ghost" id="rsBtn">Send request email</button>` : ''}
+        ${!closed && d.lastEmailed ? `<button class="btn sm ghost" id="rsBtn" ${outstanding?'':'disabled'}>Resend original</button>` : ''}
+        <button class="btn sm ghost" id="cpBtn">Copy BP link</button>
+        <button class="btn sm ghost" id="clBtn">${closed ? 'Reopen' : 'Close request'}</button>
+      </div>
+    </div>
+    <div class="card"><b style="display:block;margin-bottom:10px">Documents</b>
+      ${d.items.map(i => `<div class="di">
+        <div style="display:flex;justify-content:space-between;gap:10px"><b>${esc(i.label)}</b>${chip(i.status)}</div>
+        ${i.note ? `<div class="note" style="margin:6px 0 0">${esc(i.note)}</div>` : ''}
+        ${i.files.length ? `<div class="files" style="margin-top:6px">${i.files.map(f => `<a href="${esc(f.url)}" target="_blank" rel="noopener">📄 ${esc(f.name)}</a>`).join('')}</div>` : ''}
+        ${!closed ? `<div class="acts">
+          ${i.status!=='Approved' && i.files.length ? `<button class="btn sm ok" data-a="Approved" data-k="${esc(i.key)}">Approve</button>` : ''}
+          ${i.status==='Submitted' || i.status==='Approved' ? `<button class="btn sm bad" data-a="Needs Redo" data-k="${esc(i.key)}">Needs redo</button>` : ''}
+          ${i.status==='Missing' ? `<button class="btn sm ghost" data-a="Approved" data-k="${esc(i.key)}">Mark on file</button>` : ''}
+        </div>` : ''}
+      </div>`).join('')}
+    </div>
+  </div>`;
+  drawer.querySelector('.x').onclick = closeDrawer;
+  const act = async (btn, fn, msg) => {
+    btn.disabled = true;
+    try {
+      const nd = await fn(); toast(msg); drawReq(nd);
+      loadReqs().then(() => { if (S.tab==='list') listPane(); }).catch(()=>{}); // refresh list in the background
+    } catch(e){ toast(e.message, true); btn.disabled = false; }
+  };
+  const fu = $('#fuBtn'); if (fu) fu.onclick = () => confirm(`Send a follow-up email to ${d.email} listing ${outstanding} outstanding item${outstanding>1?'s':''}?`) && act(fu, () => sapi('followUp', { id:d.id }), 'Follow-up sent 📨');
+  const rs = $('#rsBtn'); if (rs) rs.onclick = () => confirm(`Send the request email to ${d.email}?`) && act(rs, () => sapi('resend', { id:d.id }), 'Request email sent 📨');
+  $('#cpBtn').onclick = () => { navigator.clipboard.writeText(d.link).then(() => toast('BP link copied'), () => prompt('Copy this link:', d.link)); };
+  $('#clBtn').onclick = e => act(e.target, () => sapi(closed ? 'reopenRequest' : 'closeRequest', { id:d.id }), closed ? 'Request reopened' : 'Request closed');
+  drawer.querySelectorAll('[data-a]').forEach(b => b.onclick = () => {
+    let note = '';
+    if (b.dataset.a === 'Needs Redo') { note = prompt('What needs fixing? (The BP will see this note on their page and in the follow-up email.)'); if (note === null) return; }
+    act(b, () => sapi('setItemStatus', { id:d.id, itemKey:b.dataset.k, status:b.dataset.a, note }), b.dataset.a==='Approved' ? 'Marked approved' : 'Marked as needs redo');
+  });
+}
+
+/* ===== Router ===== */
+const params = new URLSearchParams(location.search);
+const TOKEN = params.get('t');
+if (API_URL.indexOf('PASTE_') === 0) app.innerHTML = '<div class="card narrow"><h2>Almost there</h2><p>Paste your Apps Script Web App URL into <b>API_URL</b> in index.html.</p></div>';
+else if (TOKEN) bpView();
+else staffBoot();
+
+</script>
+</body>
+</html>
